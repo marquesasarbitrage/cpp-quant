@@ -10,6 +10,8 @@
 // The pricing of commodity contract - Black (1976) : https://www.sciencedirect.com/science/article/abs/pii/0304405X76900246
 // Let's be rational - Jäckel (2015) : http://www.jaeckel.org/
 // Option valuation under stochastic volatility - Lewis (2000) : https://econpapers.repec.org/bookchap/vsvvbooks/ovsv.htm
+// The volatility surface, a practitioner’s guide - Gatheral (2006) : https://link.springer.com/article/10.1007/s11408-007-0072-4
+// The Heston Model and its Extensions in Matlab and C# - Fabrice Douglas Rouah (2013): https://onlinelibrary.wiley.com/doi/book/10.1002/9781118656471
 
 namespace BlackTools 
 {
@@ -27,7 +29,7 @@ namespace BlackTools
         double x, 
         double isCall, 
         const std::function<std::complex<double>(std::complex<double>)>& characteristicFunction, 
-        const GaussLaguerreQuadrature& gaussLaguerreQuadrature_); 
+        GaussLaguerreQuadrature& gaussLaguerreQuadrature_); 
     
 }
 
@@ -45,7 +47,7 @@ namespace UndiscountedBlack
     double getPrice(double x, double normalizedSigma, bool isCall);
 
     std::complex<double> getCharacteristicFunction(std::complex<double> u, double x, double normalizedSigma);
-    double getLewisPrice(double x, double normalizedSigma, bool isCall, const GaussLaguerreQuadrature& gaussLaguerreQuadrature_);
+    double getLewisPrice(double x, double normalizedSigma, bool isCall, GaussLaguerreQuadrature& gaussLaguerreQuadrature_);
 }
 
 namespace ImpliedVolatilitySolver
@@ -80,7 +82,7 @@ namespace ImpliedVolatilitySolver
 
     double getNewtonNormalizedVolatility(double beta, double x, bool isCall);
 
-    double getBlackImpliedVolatility(double undiscountedPrice, double x, double timeToMaturity, bool isCall);
+    double getBlackImpliedVolatility(double undiscountedPrice, double F, double K, double timeToMaturity, bool isCall);
 }
 
 namespace Heston
@@ -93,6 +95,7 @@ namespace Heston
     };
 
     std::complex<double> getCharacteristicFunction(std::complex<double> u, double T, const Parameters& hestonParams);
-    double getUndiscountedLewisPrice(double x, double T, const Parameters& hestonParams, bool isCall, const GaussLaguerreQuadrature& gaussLaguerreQuadrature_);
-    double getImpliedVolatility(double x, const Parameters& hestonParams, const GaussLaguerreQuadrature& gaussLaguerreQuadrature_);
+    double getUndiscountedLewisPrice(double x, double T, const Parameters& hestonParams, bool isCall, GaussLaguerreQuadrature& gaussLaguerreQuadrature_);
+    double getImpliedVolatility(double x, double T, const Parameters& hestonParams, GaussLaguerreQuadrature& gaussLaguerreQuadrature_);
 }
+

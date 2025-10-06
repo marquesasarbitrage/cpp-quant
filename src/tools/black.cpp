@@ -75,19 +75,19 @@ namespace UndiscountedBlack
 
     double getVega(double x, double normalizedSigma)
     {
-        if (normalizedSigma<=0) return 0;
+        if (normalizedSigma<=DBL_MIN) return 0;
         return BlackTools::ONE_OVER_SQRT_TWO_PI*exp(-0.5*(x*x/(normalizedSigma*normalizedSigma)+0.25*normalizedSigma*normalizedSigma));
     }
 
     double getVolga(double x, double normalizedSigma)
     {
-        if (normalizedSigma<=0) return 0;
+        if (normalizedSigma<=DBL_MIN) return 0;
         return (x/(normalizedSigma*normalizedSigma*normalizedSigma) - .125)*getVega(x, normalizedSigma);
     }
 
     double getPrice(double x, double normalizedSigma, bool isCall)
     {
-        if (normalizedSigma<=0) return BlackTools::getNormalizedIntrisicValue(x, isCall);
+        if (normalizedSigma<=DBL_MIN) return BlackTools::getNormalizedIntrisicValue(x, isCall);
         if (!isCall) x = -x;
         return getCallPrice(x,normalizedSigma);
     }
@@ -97,7 +97,7 @@ namespace UndiscountedBlack
         return std::exp(-0.5*u*(u+std::complex<double>(0.0,1.0))*normalizedSigma*normalizedSigma);
     }
 
-    double getLewisPrice(double x, double normalizedSigma, bool isCall, const GaussLaguerreQuadrature& gaussLaguerreQuadrature_)
+    double getLewisPrice(double x, double normalizedSigma, bool isCall, GaussLaguerreQuadrature& gaussLaguerreQuadrature_)
     {
         std::function<std::complex<double>(std::complex<double>)> cf = [normalizedSigma, x](std::complex<double> u) {
             return getCharacteristicFunction(u, x, normalizedSigma);
@@ -274,18 +274,12 @@ namespace ImpliedVolatilitySolver
         else return NAN;
     }
 
-    double getBlackImpliedVolatility(double undiscountedPrice, double x, double timeToMaturity, bool isCall)
+    double getBlackImpliedVolatility(double undiscountedPrice, double F, double K, double timeToMaturity, bool isCall)
     {
-        if (undiscountedPrice<0) return NAN;
+        //if (undiscountedPrice<0) return NAN;
 
         try{
-            double beta = undiscountedPrice/sqrt(std::exp(x));
-            if (abs(UndiscountedBlack::getVega(x, getInitialGuess(beta, x, isCall)))<1e-5) return NAN;
-            else{
-                double iv = getNewtonNormalizedVolatility(beta, x, isCall)/sqrt(timeToMaturity);
-                if (iv<=0.0) return NAN;
-                else return iv; 
-            }
+            return getNewtonNormalizedVolatility(undiscountedPrice/sqrt(F*K), log(F/K), true)/sqrt(timeToMaturity);
             
         }catch (const std::exception& e)
         {
@@ -313,7 +307,7 @@ namespace Heston
         return exp(C*hestonParams.theta_+D*hestonParams.v0_); 
     }
 
-    double getUndiscountedLewisPrice(double x, double T, const Parameters& hestonParams, bool isCall, const GaussLaguerreQuadrature& gaussLaguerreQuadrature_)
+    double getUndiscountedLewisPrice(double x, double T, const Parameters& hestonParams, bool isCall, GaussLaguerreQuadrature& gaussLaguerreQuadrature_)
     {
         std::function<std::complex<double>(std::complex<double>)> cf = [T,hestonParams](std::complex<double> u) {
             return getCharacteristicFunction(u, T, hestonParams);
@@ -321,11 +315,11 @@ namespace Heston
         return BlackTools::getLewisUndiscountedPrice(x, isCall, cf, gaussLaguerreQuadrature_);
     }
 
-    double getImpliedVolatility(double x, double T, const Parameters& hestonParams, const GaussLaguerreQuadrature& gaussLaguerreQuadrature_)
+    double getImpliedVolatility(double F, double K, double T, const Parameters& hestonParams, GaussLaguerreQuadrature& gaussLaguerreQuadrature_)
     {
-        double undiscountedPrice = getUndiscountedLewisPrice(x,T,hestonParams, true, gaussLaguerreQuadrature_); 
-        return ImpliedVolatilitySolver::getBlackImpliedVolatility(undiscountedPrice,x,T,true);
+        double undiscountedPrice = getUndiscountedLewisPrice(log(F/K),T,hestonParams, true, gaussLaguerreQuadrature_); 
+        return ImpliedVolatilitySolver::getBlackImpliedVolatility(undiscountedPrice,F,K,T,true);
     }
 
-
 }
+
