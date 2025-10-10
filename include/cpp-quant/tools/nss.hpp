@@ -13,6 +13,7 @@ class NelsonSiegel
 
         double getRate(double t) const; 
         double getInstantaneousForwardRate(double t) const;
+        double getDerivativeInstantaneousForwardRate(double t) const;
 
         double getBeta1() const; 
         double getBeta2() const; 
@@ -41,6 +42,7 @@ class Svensson final: public NelsonSiegel
 
         double getRate(double t) const; 
         double getInstantaneousForwardRate(double t) const;
+        double getDerivativeInstantaneousForwardRate(double t) const;
         double getBeta3() const;
         double getTau2() const;
         void setBeta3(double b3);

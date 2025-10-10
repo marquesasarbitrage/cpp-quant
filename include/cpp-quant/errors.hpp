@@ -16,5 +16,14 @@ class QuantLibraryError: public std::exception
 
 namespace QuantErrorRegistry
 {
-    ; 
+    class NegativeYearFractionError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+    class NegativeForwardYearFractionError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+
+    namespace TermStructure 
+    {
+        namespace DiscountCurve 
+        {
+            class ArbitrageError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+        }
+    }
 }

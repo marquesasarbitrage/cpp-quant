@@ -36,6 +36,10 @@ double NelsonSiegel::getInstantaneousForwardRate(double t) const {
     return b0_ + b1_ * exp(-t / tau_) + b2_ * exp(-t / tau_) *  t / tau_;
 }
 
+double NelsonSiegel::getDerivativeInstantaneousForwardRate(double t) const {
+    return b1_ * exp(-t / tau_)/tau_ + b2_ * exp(-t / tau_)/tau_ *  (1-t/tau_);
+}
+
 double Svensson::getF3(double t) const {
     double t1 = t / tau2_;
     return (1 - exp(-t1)) / t1 - exp(-t1);;
@@ -49,4 +53,8 @@ double Svensson::getRate(double t) const {
 double Svensson::getInstantaneousForwardRate(double t) const {
     double t1 = t / tau2_;
     return NelsonSiegel::getInstantaneousForwardRate(t) + b3_ * exp(-t1) * t / tau2_; 
+}
+
+double Svensson::getDerivativeInstantaneousForwardRate(double t) const {
+    return NelsonSiegel::getDerivativeInstantaneousForwardRate(t) + b3_*exp(-t / tau2_)/tau2_ *  (1-t/tau2_);
 }
