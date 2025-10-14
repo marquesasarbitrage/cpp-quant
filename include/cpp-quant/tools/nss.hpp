@@ -1,5 +1,9 @@
 #pragma once 
 #include <iostream>
+#include <map>
+#include "cpp-math/regression.hpp"
+#include "cpp-math/optim.hpp"
+#include "cpp-math/loss.hpp"
 
 // Model refrences 
 // Parsimonious Modelling of Yield Curve - Nelson and Siegel (1987) : https://www.jstor.org/stable/2352957
@@ -43,8 +47,10 @@ class Svensson final: public NelsonSiegel
         double getRate(double t) const; 
         double getInstantaneousForwardRate(double t) const;
         double getDerivativeInstantaneousForwardRate(double t) const;
+
         double getBeta3() const;
         double getTau2() const;
+
         void setBeta3(double b3);
         void setTau2(double tau2);
     private:
@@ -52,4 +58,28 @@ class Svensson final: public NelsonSiegel
         double tau2_;
         double getF3(double t) const;
 };
+
+class NelsonSiegelCalibration
+{
+    public:
+        NelsonSiegelCalibration(const std::map<double, double>& data, bool isSpotRate, bool useSvensson, double estimationTau1, double estimationTau2);
+        NelsonSiegelCalibration(const std::map<double, double>& data, bool isSpotRate, bool useSvensson);
+        ~NelsonSiegelCalibration() = default;
+
+        OrdinaryLeastSquare getProxy() const; 
+        NelderMead getNelderMeadCalibrated() const;
+        EstimatorLoss getLoss(std::shared_ptr<NelsonSiegel> nss) const;
+    
+    private: 
+        std::map<double, double> data_;
+        bool isSpotRate_;
+        bool useSvensson_;
+        double estimationTau1_;
+        double estimationTau2_; 
+        double getTargetFunction(std::vector<double> params) const;
+
+};
+
+
+
 

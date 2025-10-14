@@ -14,10 +14,28 @@ class DiscountCurve final: public TermStructure
         enum class InterpolationMethod {LINEAR, CUBIC_SPLINE}; 
         enum class InterpolationVariable {ZC_CONTINUOUS_YIELD, ZC_SIMPLE_YIELD, ZC_PRICE, ZC_LOG_PRICE}; 
 
-        DiscountCurve(const DateTime& referenceTime, std::shared_ptr<NelsonSiegel> nssYieldObject, const YieldType& yieldType);
-        DiscountCurve(const DateTime& referenceTime, std::map<double, double> data, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
-        //DiscountCurve(const DateTime& referenceTime, std::map<Tenor, double> data, const YieldCurveInterpolationMethod& method);
-        //DiscountCurve(const DateTime& referenceTime, std::map<DateTime, double> data, const YieldCurveInterpolationMethod& method);
+        struct CurveParameters
+        {
+            CurveParameters(const Scheduler& scheduler, const std::set<Tenor>& tenorList, bool useSimpleRate, bool useSvensson); 
+            CurveParameters(const Scheduler& scheduler, const std::set<Tenor>& tenorList, bool useSimpleRate, const InterpolationMethod& interpolationMethod);
+            CurveParameters(const Scheduler& scheduler, const std::set<Tenor>& tenorList, bool useSimpleRate, bool useSvensson, double basisPointParralelBump);
+            CurveParameters(const Scheduler& scheduler, const std::set<Tenor>& tenorList, bool useSimpleRate, const InterpolationMethod& interpolationMethod, double basisPointParralelBump);
+            CurveParameters(const Scheduler& scheduler, const std::set<Tenor>& tenorList, bool useSimpleRate, bool useSvensson, const std::vector<double>& tenorMappedBasisPointBump);
+            CurveParameters(const Scheduler& scheduler, const std::set<Tenor>& tenorList, bool useSimpleRate, const InterpolationMethod& interpolationMethod, const std::vector<double>& tenorMappedBasisPointBump);
+            Scheduler scheduler_;
+            std::set<Tenor> tenorList_; 
+            double basisPointParralelBump_;
+            std::vector<double> tenorMappedBasisPointBump_; 
+            bool useSvensson_; 
+            bool useSimpleRate_;
+            InterpolationMethod interpolationMethod_;
+        };
+
+
+        DiscountCurve(const DateTime& referenceTime, const std::shared_ptr<NelsonSiegel>& nssYieldObject, const YieldType& yieldType);
+        DiscountCurve(const DateTime& referenceTime, const std::map<double, double>& data, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
+        DiscountCurve(const DateTime& referenceTime, const std::map<Tenor, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
+        DiscountCurve(const DateTime& referenceTime, const std::map<DateTime, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
         ~DiscountCurve() = default;
         
         //double getImpliedShortRate() const;
@@ -28,23 +46,17 @@ class DiscountCurve final: public TermStructure
         double getShortRate() const;
         double getInstantaneousForwardRate(double t) const;
         double getDerivativeInstantaneousForwardRate(double t) const;
-
         double getForwardValue(double t1, double t2) const; 
-
         double getSimpleRate(double t) const;
         double getContinuousRate(double t) const;
-        
         double getSimpleForwardRate(double t1, double t2) const;
         double getContinuousForwardRate(double t1, double t2) const;
 
+        DiscountCurve getNelsonSiegelCurve(const CurveParameters& curveParameters) const;
+        DiscountCurve getNelsonSiegelProxyCurve(const CurveParameters& curveParameters, double tau1, double tau2) const;
+        DiscountCurve getNelsonSiegelProxyCurve(const CurveParameters& curveParameters) const;
+        DiscountCurve getInterpolatedCurve(const CurveParameters& curveParameters) const;
 
-        //DiscountCurve getNelsonSiegelCurve() const; 
-        //DiscountCurve getInterpolatedCurve() const; 
-
-        //DiscountCurve getNelsonSiegelParralelStress(double bump); 
-        //DiscountCurve getInterpolatedParralelStress(double bump); 
-
-        //bool isArbitrageFreeProxy();
     
     protected: 
         virtual double _getValue(double t) const override;
@@ -52,14 +64,13 @@ class DiscountCurve final: public TermStructure
     private: 
         const std::optional<YieldType> yieldType_; 
         const std::optional<InterpolationMethod> interpolationMethod_;
-        std::shared_ptr<NelsonSiegel> nssYieldObject_; 
-        std::shared_ptr<CurveInterpolation> interpolatedLogDiscountPrice_; 
+        const std::shared_ptr<NelsonSiegel> nssYieldObject_; 
+        const std::shared_ptr<CurveInterpolation> interpolatedLogDiscountPrice_; 
 
-        double getEffectiveYearFraction(double t) const;
-        static double getDiscountFactorSimple(double yield, double t);
-        static double getDiscountFactorContinuous(double yield, double t);
-        std::shared_ptr<CurveInterpolation> getInterpolatedLogDiscountPrice(std::map<double, double> data, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
-        
+        std::shared_ptr<CurveInterpolation> getInterpolatedLogDiscountPrice(const std::map<double, double>& data, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType) const;
+        std::shared_ptr<CurveInterpolation> getInterpolatedLogDiscountPrice(const std::map<Tenor, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType) const;
+        std::shared_ptr<CurveInterpolation> getInterpolatedLogDiscountPrice(const std::map<DateTime, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType) const;
+        std::map<double, double> getCurveData(const CurveParameters& curveParameters) const; 
 };
 
 

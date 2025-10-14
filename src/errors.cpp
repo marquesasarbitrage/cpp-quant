@@ -17,7 +17,7 @@ namespace QuantErrorRegistry
     {
         namespace DiscountCurve 
         {
-            std::string ArbitrageError::getErrorMessage() const {return "The discount curve has arbitrage (discount bonds non-decreasing with time).";}
+            std::string MismatchTenorBumpSizeError::getErrorMessage() const {return "The vector of basis point bump must be the same size of the tenor lists.";}
         }
     }
 }

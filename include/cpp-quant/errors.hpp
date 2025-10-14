@@ -23,7 +23,7 @@ namespace QuantErrorRegistry
     {
         namespace DiscountCurve 
         {
-            class ArbitrageError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+            class MismatchTenorBumpSizeError final:public QuantLibraryError {protected: std::string getErrorMessage() const override; };
         }
     }
 }
