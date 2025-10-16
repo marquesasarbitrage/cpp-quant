@@ -1,19 +1,18 @@
 #include "../../../include/cpp-quant/valuation/termstructure/discountcurve.hpp"
 
-DiscountCurve::DiscountCurve(const DateTime& referenceTime, const std::shared_ptr<NelsonSiegelFamily>& nssYieldObject, const YieldType& yieldType): 
-TermStructure(referenceTime), yieldType_(yieldType), interpolationMethod_(std::nullopt), 
-nssYieldObject_(nssYieldObject), interpolatedLogDiscountPrice_(nullptr) {};
+DiscountCurve::DiscountCurve(const DateTime& referenceTime, const std::shared_ptr<NelsonSiegelFamily>& nssYieldObject): 
+TermStructure(referenceTime), interpolationMethod_(std::nullopt), nssYieldObject_(nssYieldObject), interpolatedLogDiscountPrice_(nullptr) {};
 
 DiscountCurve::DiscountCurve(const DateTime& referenceTime, const std::map<double, double>& data, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType): 
-TermStructure(referenceTime), yieldType_(std::nullopt), interpolationMethod_(interpolationMethod), 
+TermStructure(referenceTime), interpolationMethod_(interpolationMethod), 
 nssYieldObject_(nullptr), interpolatedLogDiscountPrice_(getInterpolatedLogDiscountPrice(data,interpolationMethod,dataType)) {};
 
 DiscountCurve::DiscountCurve(const DateTime& referenceTime, const std::map<Tenor, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType):
-TermStructure(referenceTime), yieldType_(std::nullopt), interpolationMethod_(interpolationMethod), 
+TermStructure(referenceTime), interpolationMethod_(interpolationMethod), 
 nssYieldObject_(nullptr), interpolatedLogDiscountPrice_(getInterpolatedLogDiscountPrice(data,scheduler,interpolationMethod,dataType)) {};
 
 DiscountCurve::DiscountCurve(const DateTime& referenceTime, const std::map<DateTime, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType):
-TermStructure(referenceTime), yieldType_(std::nullopt), interpolationMethod_(interpolationMethod), 
+TermStructure(referenceTime), interpolationMethod_(interpolationMethod), 
 nssYieldObject_(nullptr), interpolatedLogDiscountPrice_(getInterpolatedLogDiscountPrice(data,scheduler,interpolationMethod,dataType)) {};
 
 std::shared_ptr<CurveInterpolation> DiscountCurve::getInterpolatedLogDiscountPrice(const std::map<double, double>& data, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType) const
@@ -64,8 +63,6 @@ std::shared_ptr<CurveInterpolation> DiscountCurve::getInterpolatedLogDiscountPri
     return getInterpolatedLogDiscountPrice(output,interpolationMethod,dataType);
 }
 
-std::optional<DiscountCurve::YieldType> DiscountCurve::getYieldType() const{return yieldType_;}
-
 std::optional<DiscountCurve::InterpolationMethod> DiscountCurve::getInterpolationMethod() const{return interpolationMethod_;}
 
 double DiscountCurve::_getValue(double t) const
@@ -79,14 +76,7 @@ double DiscountCurve::_getValue(double t) const
             return 1.0/(1.0+simpleRate*t);
         }
     }
-    else
-    {
-        switch (yieldType_.value())
-        {
-        case YieldType::CONTINUOUS: return std::exp(-t*nssYieldObject_->getRate(t));
-        case YieldType::SIMPLE: return 1.0/(1.0+t*nssYieldObject_->getRate(t));
-        }
-    }
+    else return std::exp(-t*nssYieldObject_->getRate(t));
 }
 
 double DiscountCurve::getShortRate() const
@@ -129,8 +119,8 @@ double DiscountCurve::getDerivativeInstantaneousForwardRate(double t) const
     if (!nssYieldObject_) {
         double tMax = interpolatedLogDiscountPrice_->getUpperBoundX();
         if (t>tMax) {
-            double simpleRate = (1.0/std::exp(interpolatedLogDiscountPrice_->evaluate(tMax))-1.0)/tMax;
-            return -simpleRate*simpleRate/((1.0+simpleRate*t)*(1.0+simpleRate*t));
+            double epsilon = 0.01;
+            return -(getInstantaneousForwardRate(t + epsilon) - getInstantaneousForwardRate(t))/epsilon; 
         }
         else return -interpolatedLogDiscountPrice_->evaluateSecondDerivative(t);
     }
@@ -202,19 +192,16 @@ DiscountCurve DiscountCurve::getNelsonSiegelCurve(const DiscountCurve::CurvePara
     {
         DateTime fwdDate = curveParameters.scheduler_.getForwardDateTime(getReferenceTime(),tenor);
         double t = curveParameters.scheduler_.getYearFraction(getReferenceTime(), fwdDate);
-        if (curveParameters.useForward_) data[t] = interpolatedCurve.getInstantaneousForwardRate(t);
-        else data[t] = curveParameters.useSimpleRate_ ? interpolatedCurve.getSimpleRate(t) : interpolatedCurve.getContinuousRate(t);
+        data[t] = curveParameters.useForward_ ? interpolatedCurve.getInstantaneousForwardRate(t) : interpolatedCurve.getContinuousRate(t) ;
     }
 
-    NelsonSiegelCalibration nsCalibration = NelsonSiegelCalibration(data,curveParameters.useForward_,curveParameters.useSvensson_);
-    YieldType yieldType = curveParameters.useSimpleRate_ ? YieldType::SIMPLE : YieldType::CONTINUOUS; 
+    NelsonSiegelCalibration nsCalibration = NelsonSiegelCalibration(data,!(curveParameters.useForward_) ,curveParameters.useSvensson_);
     DateTime dt = getReferenceTime();
     std::shared_ptr<NelsonSiegelFamily> nss = nullptr;
     NelderMead nm = nsCalibration.getNelderMeadObject(); 
     if (!nm.getError()){
-
         std::vector<double> params = nm.getResult();
-        return DiscountCurve(dt,nsCalibration.getOLS(params[0], params[1]),yieldType);
+        return DiscountCurve(dt,nsCalibration.getOLS(params[0], params[1]));
         
     } else return interpolatedCurve;
 }

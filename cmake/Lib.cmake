@@ -5,8 +5,8 @@ add_library(
         src/tools/nss.cpp
         src/tools/black.cpp
         src/tools/scheduler.cpp
-        src/valuation/termstructure/termstructure.cpp)
-        #src/valuation/termstructure/discountcurve.cpp)
+        src/valuation/termstructure/termstructure.cpp
+        src/valuation/termstructure/discountcurve.cpp)
 target_link_libraries(cpp-quant  PUBLIC cpp-datetime)
 target_link_libraries(cpp-quant  PUBLIC cpp-math)
 target_include_directories(cpp-quant  PUBLIC include)

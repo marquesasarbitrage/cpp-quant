@@ -10,7 +10,6 @@ class DiscountCurve final: public TermStructure
 {
     public: 
 
-        enum class YieldType {CONTINUOUS, SIMPLE};
         enum class InterpolationMethod {LINEAR, CUBIC_SPLINE}; 
         enum class InterpolationVariable {ZC_CONTINUOUS_YIELD, ZC_SIMPLE_YIELD, ZC_PRICE, ZC_LOG_PRICE}; 
 
@@ -33,15 +32,12 @@ class DiscountCurve final: public TermStructure
         };
 
 
-        DiscountCurve(const DateTime& referenceTime, const std::shared_ptr<NelsonSiegelFamily>& nssYieldObject, const YieldType& yieldType);
+        DiscountCurve(const DateTime& referenceTime, const std::shared_ptr<NelsonSiegelFamily>& nssYieldObject);
         DiscountCurve(const DateTime& referenceTime, const std::map<double, double>& data, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
         DiscountCurve(const DateTime& referenceTime, const std::map<Tenor, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
         DiscountCurve(const DateTime& referenceTime, const std::map<DateTime, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
         ~DiscountCurve() = default;
         
-        //double getImpliedShortRate() const;
-
-        std::optional<YieldType> getYieldType() const;
         std::optional<InterpolationMethod> getInterpolationMethod() const;
 
         double getShortRate() const;
@@ -60,7 +56,6 @@ class DiscountCurve final: public TermStructure
         virtual double _getValue(double t) const override;
     
     private: 
-        const std::optional<YieldType> yieldType_; 
         const std::optional<InterpolationMethod> interpolationMethod_;
         const std::shared_ptr<NelsonSiegelFamily> nssYieldObject_; 
         const std::shared_ptr<CurveInterpolation> interpolatedLogDiscountPrice_; 

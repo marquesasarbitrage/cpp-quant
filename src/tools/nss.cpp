@@ -108,8 +108,7 @@ double NelsonSiegelCalibration::getTargetFunction(std::vector<double> params) co
     if (useSvensson_) {
         tau1 = params[0];
         tau2 = params[1];
-    }
-    else {
+    } else {
         tau1 = params[0];
         tau2 = 10.0;
     }
@@ -123,7 +122,8 @@ NelderMead NelsonSiegelCalibration::getNelderMeadObject() const
     std::function<double(std::vector<double>)> targetFunction = [*this](std::vector<double> params){ return getTargetFunction(params);};
     std::vector<double> initialTau = useSvensson_ ? std::vector<double>{2.0,10.0} : std::vector<double>{2.0}; 
     NelderMead nm = NelderMead(initialTau,targetFunction);
-    nm.setPerturbationParam(10.0);
+    nm.setInitSimplexMethod(NelderMead::InitSimplexMethod::SYMMETRIC); 
+    nm.setPerturbationParam(3);
     nm.optimize();
     return nm;
 }

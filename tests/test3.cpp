@@ -196,13 +196,9 @@ namespace CanadianZeroCurveTest
             for (int i=15; i<=30; i+=3){tenorList.insert(Tenor(i, TenorType::YEARS));}
 
 
-            DiscountCurve::CurveParameters svenssonParams(Scheduler(),tenorList,false,true,true);
-            //DiscountCurve::CurveParameters nsParams(Scheduler(),tenorList,false,false,false);
-
+            DiscountCurve::CurveParameters svenssonParams(Scheduler(),tenorList,true,true,false);
             DiscountCurve svensson = cubicSpline.getNelsonSiegelCurve(svenssonParams);
             DiscountCurveTestTool::writeDiscountCurveData(svensson, "svenssonCurve");
-            //DiscountCurve nelsonSiegel = linear.getNelsonSiegelCurve(nsParams);
-            //DiscountCurveTestTool::writeDiscountCurveData(nelsonSiegel, "nelsonSiegelCurve");
 
         }
 

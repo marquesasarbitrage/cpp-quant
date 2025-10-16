@@ -92,10 +92,10 @@ void testNelderMead()
     NelsonSiegelCalibration nsCalib(getYearFractionMappedData(), true, false);
     NelsonSiegelCalibration svenssonCalib(getYearFractionMappedData(), true, true);
 
-    std::vector<double> nsParams = nsCalib.getNelderMeadObject().getResult();
+    //std::vector<double> nsParams = nsCalib.getNelderMeadObject().getResult();
     std::vector<double> svenssonParams = svenssonCalib.getNelderMeadObject().getResult();
 
-    writeNelsonSiegelResult(nsCalib.getOLS(nsParams[0],10.0), "nelsonSiegelCurveNM"); 
+    //writeNelsonSiegelResult(nsCalib.getOLS(nsParams[0],10.0), "nelsonSiegelCurveNM"); 
     writeNelsonSiegelResult(svenssonCalib.getOLS(svenssonParams[0],svenssonParams[1]), "svenssonCurveNM"); 
 }
 
