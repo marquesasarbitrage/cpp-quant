@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <set>
 #include <iomanip> 
 #include <filesystem>
 #include "../include/cpp-quant/valuation/termstructure/discountcurve.hpp"
@@ -43,7 +44,7 @@ namespace DiscountCurveTestTool
         }
 
         file.close();
-        std::cout << "Discount curve data written successfully!" << std::endl;
+        std::cout << "Discount curve data " << fileName << " written successfully!" << std::endl;
 
     }
 
@@ -182,6 +183,29 @@ namespace CanadianZeroCurveTest
             assert(isClose(dc2.getSimpleRate(10.0),DiscountCurveTestTool::modifySimpleYield(10.0,StaticData::RATE_10_YEARS,DiscountCurve::InterpolationVariable::ZC_SIMPLE_YIELD),1e-2));
         }
 
+        void saveCurves()
+        {
+            DiscountCurve linear(StaticData::REFERENCE_DATE, StaticData::yearFractionMappedData(DiscountCurve::InterpolationVariable::ZC_PRICE), DiscountCurve::InterpolationMethod::LINEAR, DiscountCurve::InterpolationVariable::ZC_PRICE);
+            DiscountCurveTestTool::writeDiscountCurveData(linear, "linearCurve");
+            DiscountCurve cubicSpline(StaticData::REFERENCE_DATE, StaticData::yearFractionMappedData(DiscountCurve::InterpolationVariable::ZC_PRICE), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, DiscountCurve::InterpolationVariable::ZC_PRICE);
+            DiscountCurveTestTool::writeDiscountCurveData(cubicSpline, "cubicSplineCurve");
+
+            std::set<Tenor> tenorList = {Tenor(1, TenorType::DAYS), Tenor(1, TenorType::WEEKS), Tenor(2, TenorType::WEEKS)};
+            for (int i=1; i<12; i++){tenorList.insert(Tenor(i, TenorType::MONTHS));}
+            for (int i=1; i<=10; i++){tenorList.insert(Tenor(i, TenorType::YEARS));}
+            for (int i=15; i<=30; i+=3){tenorList.insert(Tenor(i, TenorType::YEARS));}
+
+
+            DiscountCurve::CurveParameters svenssonParams(Scheduler(),tenorList,false,true,true);
+            //DiscountCurve::CurveParameters nsParams(Scheduler(),tenorList,false,false,false);
+
+            DiscountCurve svensson = cubicSpline.getNelsonSiegelCurve(svenssonParams);
+            DiscountCurveTestTool::writeDiscountCurveData(svensson, "svenssonCurve");
+            //DiscountCurve nelsonSiegel = linear.getNelsonSiegelCurve(nsParams);
+            //DiscountCurveTestTool::writeDiscountCurveData(nelsonSiegel, "nelsonSiegelCurve");
+
+        }
+
         void main()
         {
             testInterpolationVariable(DiscountCurve::InterpolationVariable::ZC_CONTINUOUS_YIELD); 
@@ -190,8 +214,8 @@ namespace CanadianZeroCurveTest
             testInterpolationVariable(DiscountCurve::InterpolationVariable::ZC_SIMPLE_YIELD); 
             testNegativeYearFractionError();
             testOtherConstructors();
-            DiscountCurve dc(StaticData::REFERENCE_DATE, StaticData::yearFractionMappedData(DiscountCurve::InterpolationVariable::ZC_PRICE), DiscountCurve::InterpolationMethod::LINEAR, DiscountCurve::InterpolationVariable::ZC_PRICE);
-            DiscountCurveTestTool::writeDiscountCurveData(dc, "data");
+            saveCurves(); 
+
             std::cout << "All tests using the Canadian ZC Curve (September 24th, 2025) are passed!" << std::endl;
         }
     }
