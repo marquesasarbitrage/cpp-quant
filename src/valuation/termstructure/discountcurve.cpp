@@ -72,8 +72,8 @@ double DiscountCurve::_getValue(double t) const
         double tMax = interpolatedLogDiscountPrice_->getUpperBoundX();
         if (t<=tMax) return std::exp(interpolatedLogDiscountPrice_->evaluate(t));
         else {
-            double simpleRate = (1.0/std::exp(interpolatedLogDiscountPrice_->evaluate(tMax))-1.0)/tMax;
-            return 1.0/(1.0+simpleRate*t);
+            double simpleRate = (1.0/std::exp(interpolatedLogDiscountPrice_->evaluate(tMax)) -1.0)/tMax;
+            return 1.0/(1.0 + simpleRate*t);
         }
     }
     else return std::exp(-t*nssYieldObject_->getRate(t));
@@ -195,15 +195,12 @@ DiscountCurve DiscountCurve::getNelsonSiegelCurve(const DiscountCurve::CurvePara
         data[t] = curveParameters.useForward_ ? interpolatedCurve.getInstantaneousForwardRate(t) : interpolatedCurve.getContinuousRate(t) ;
     }
 
-    NelsonSiegelCalibration nsCalibration = NelsonSiegelCalibration(data,!(curveParameters.useForward_) ,curveParameters.useSvensson_);
+    NelsonSiegelCalibration nsCalibration = NelsonSiegelCalibration(data,!(curveParameters.useForward_));
+    nsCalibration.setGridSize(1.0);
     DateTime dt = getReferenceTime();
     std::shared_ptr<NelsonSiegelFamily> nss = nullptr;
-    NelderMead nm = nsCalibration.getNelderMeadObject(); 
-    if (!nm.getError()){
-        std::vector<double> params = nm.getResult();
-        return DiscountCurve(dt,nsCalibration.getOLS(params[0], params[1]));
-        
-    } else return interpolatedCurve;
+    if (curveParameters.useSvensson_) return DiscountCurve(dt,nsCalibration.fitSvensson());
+    else return DiscountCurve(dt,nsCalibration.fitNelsonSiegel());   
 }
 
 

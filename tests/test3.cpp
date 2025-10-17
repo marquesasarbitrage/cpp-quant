@@ -190,13 +190,10 @@ namespace CanadianZeroCurveTest
             DiscountCurve cubicSpline(StaticData::REFERENCE_DATE, StaticData::yearFractionMappedData(DiscountCurve::InterpolationVariable::ZC_PRICE), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, DiscountCurve::InterpolationVariable::ZC_PRICE);
             DiscountCurveTestTool::writeDiscountCurveData(cubicSpline, "cubicSplineCurve");
 
-            std::set<Tenor> tenorList = {Tenor(1, TenorType::DAYS), Tenor(1, TenorType::WEEKS), Tenor(2, TenorType::WEEKS)};
-            for (int i=1; i<12; i++){tenorList.insert(Tenor(i, TenorType::MONTHS));}
-            for (int i=1; i<=10; i++){tenorList.insert(Tenor(i, TenorType::YEARS));}
-            for (int i=15; i<=30; i+=3){tenorList.insert(Tenor(i, TenorType::YEARS));}
+            std::set<Tenor> tenorList;
+            for (int i = 1; i <=30*52; i++) tenorList.insert(Tenor(i, TenorType::WEEKS));
 
-
-            DiscountCurve::CurveParameters svenssonParams(Scheduler(),tenorList,true,true,false);
+            DiscountCurve::CurveParameters svenssonParams(Scheduler(),tenorList,false,true,true);
             DiscountCurve svensson = cubicSpline.getNelsonSiegelCurve(svenssonParams);
             DiscountCurveTestTool::writeDiscountCurveData(svensson, "svenssonCurve");
 

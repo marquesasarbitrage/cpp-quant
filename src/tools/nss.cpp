@@ -57,10 +57,9 @@ double Svensson::getDerivativeInstantaneousForwardRate(double t) const {
     return forwardRateFuntion1(t, tau1_)*(b2_*(1-t/tau1_) - b1_) + b3_*forwardRateFuntion1(t, tau2_)*(1-t/tau2_)/tau2_;
 }
 
-NelsonSiegelCalibration::NelsonSiegelCalibration(const std::map<double, double>& data, bool isSpotRate, bool useSvensson):
-data_(data), isSpotRate_(isSpotRate), useSvensson_(useSvensson){};
+NelsonSiegelCalibration::NelsonSiegelCalibration(const std::map<double, double>& data, bool isSpotRate):data_(data), isSpotRate_(isSpotRate), gridSize_(.5){};
 
-std::shared_ptr<NelsonSiegelFamily> NelsonSiegelCalibration::getOLS(double tau1, double tau2) const
+std::shared_ptr<NelsonSiegelFamily> NelsonSiegelCalibration::fitOLS(double tau1, double tau2, bool useSvensson) const
 {
     std::vector<double> y; 
     std::vector<std::vector<double>> x;
@@ -71,11 +70,11 @@ std::shared_ptr<NelsonSiegelFamily> NelsonSiegelCalibration::getOLS(double tau1,
         if (isSpotRate_){
             X.push_back(NelsonSiegel::rateFuntion1(d.first,tau1));
             X.push_back(NelsonSiegel::rateFuntion2(d.first,tau1));
-            if (useSvensson_) X.push_back(NelsonSiegel::rateFuntion2(d.first,tau2));
+            if (useSvensson) X.push_back(NelsonSiegel::rateFuntion2(d.first,tau2));
         }else {
             X.push_back(NelsonSiegel::forwardRateFuntion1(d.first,tau1));
             X.push_back(NelsonSiegel::forwardRateFuntion2(d.first,tau1));
-            if (useSvensson_)X.push_back(NelsonSiegel::forwardRateFuntion2(d.first,tau2));
+            if (useSvensson)X.push_back(NelsonSiegel::forwardRateFuntion2(d.first,tau2));
         }
         x.push_back(X);
         
@@ -84,14 +83,14 @@ std::shared_ptr<NelsonSiegelFamily> NelsonSiegelCalibration::getOLS(double tau1,
     double beta0 = ols.getIntercept(); 
     std::vector<double> betas = ols.getCoefficients();
     std::shared_ptr<NelsonSiegelFamily> nss = nullptr;
-    if (useSvensson_) nss = std::make_shared<Svensson>(beta0,betas[0],betas[1],betas[2],tau1,tau2);
+    if (useSvensson) nss = std::make_shared<Svensson>(beta0,betas[0],betas[1],betas[2],tau1,tau2);
     else nss = std::make_shared<NelsonSiegel>(beta0,betas[0],betas[1],tau1);
     return nss;
 }
 
-EstimatorLoss NelsonSiegelCalibration::getLoss(double tau1, double tau2) const
+EstimatorLoss NelsonSiegelCalibration::getLoss(double tau1, double tau2, bool useSvensson) const
 {
-    std::shared_ptr<NelsonSiegelFamily> nss = getOLS(tau1,tau2);
+    std::shared_ptr<NelsonSiegelFamily> nss = fitOLS(tau1,tau2, useSvensson);
     std::vector<double> estimates; 
     std::vector<double> trueValues;
     for (const auto& d: data_)
@@ -102,29 +101,93 @@ EstimatorLoss NelsonSiegelCalibration::getLoss(double tau1, double tau2) const
     return EstimatorLoss(estimates,trueValues);
 }
 
-double NelsonSiegelCalibration::getTargetFunction(std::vector<double> params) const
+double NelsonSiegelCalibration::getNelsonSiegelIniatialTau() const
 {
-    double tau1, tau2;
-    if (useSvensson_) {
-        tau1 = params[0];
-        tau2 = params[1];
-    } else {
-        tau1 = params[0];
-        tau2 = 10.0;
+    double tau, meanSquaredError, tauWinner, minMSE;
+    double tMax = std::prev(data_.end())->first;
+    while (tau<=tMax)
+    {
+        tau += gridSize_; 
+        meanSquaredError = getLoss(tau,10.0,false).getMSE();
+        std::cout << meanSquaredError<< std::endl;
+        if (tau == gridSize_){
+            tauWinner = tau;
+            minMSE = meanSquaredError;
+        }else{
+            if (meanSquaredError<minMSE){
+                tauWinner = tau; 
+                minMSE = meanSquaredError;
+            }
+        }
     }
-    if (tau1==0.0 or tau2==0.0) return 1e10;
-    EstimatorLoss loss = getLoss(tau1,tau2);
-    return loss.getMSE();
+    return tauWinner;
 }
 
-NelderMead NelsonSiegelCalibration::getNelderMeadObject() const
+std::vector<double> NelsonSiegelCalibration::getSvenssonIniatialTau() const
 {
-    std::function<double(std::vector<double>)> targetFunction = [*this](std::vector<double> params){ return getTargetFunction(params);};
-    std::vector<double> initialTau = useSvensson_ ? std::vector<double>{2.0,10.0} : std::vector<double>{2.0}; 
+    double tau1, tau2, meanSquaredError, tauWinner1, tauWinner2, minMSE;
+    double tMax = std::prev(data_.end())->first;
+    while (tau1<=tMax)
+    {
+        tau1 += gridSize_;
+        while (tau2<=tMax)
+        {
+            tau2 += gridSize_; 
+            meanSquaredError = getLoss(tau1,tau2,true).getMSE();
+            if (tau1 == gridSize_ and tau2 ==gridSize_){
+                tauWinner1 = tau1;
+                tauWinner2 = tau2;
+                minMSE = meanSquaredError;
+            }else{
+                if (meanSquaredError<minMSE){
+                    tauWinner1 = tau1;
+                    tauWinner2 = tau2; 
+                    minMSE = meanSquaredError;
+                }
+            }
+        }
+            
+    }
+    return {tauWinner1,tauWinner2};
+}
+
+void NelsonSiegelCalibration::setGridSize(double value) {gridSize_ = value;}
+
+std::shared_ptr<NelsonSiegelFamily> NelsonSiegelCalibration::fitNelsonSiegel() const
+{
+    std::function<double(std::vector<double>)> targetFunction = [*this](std::vector<double> params)
+    { 
+        std::cout << params[0] << std::endl;
+        if (params[0]==0.0) return 1e10;
+        EstimatorLoss loss = getLoss(params[0],10.0, false);
+        return loss.getMSE();
+    };
+
+    std::vector<double> initialTau = {getNelsonSiegelIniatialTau()};
     NelderMead nm = NelderMead(initialTau,targetFunction);
     nm.setInitSimplexMethod(NelderMead::InitSimplexMethod::SYMMETRIC); 
-    nm.setPerturbationParam(3);
+    nm.setPerturbationParam(gridSize_);
     nm.optimize();
-    return nm;
+    if (!nm.getError()) return fitOLS(nm.getResult()[0], 10.0, false);
+    else return fitOLS(initialTau[0], 10.0, false);
 }
 
+std::shared_ptr<NelsonSiegelFamily>  NelsonSiegelCalibration::fitSvensson() const
+{
+    
+    std::function<double(std::vector<double>)> targetFunction = [*this](std::vector<double> params)
+    { 
+        std::cout << "Tau1: " <<params[0] << std::endl;
+        std::cout << "Tau2: " <<params[1] << std::endl;
+        if (params[0]==0.0 or params[1]==0.0) return 1e10;
+        EstimatorLoss loss = getLoss(params[0], params[1], true);
+        return loss.getMSE();
+    };
+    std::vector<double> params0 = getSvenssonIniatialTau(); 
+    NelderMead nm = NelderMead(params0,targetFunction);
+    nm.optimize();
+    nm.setInitSimplexMethod(NelderMead::InitSimplexMethod::SYMMETRIC); 
+    nm.setPerturbationParam(gridSize_);
+    if (!nm.getError()) return fitOLS(nm.getResult()[0], nm.getResult()[1], true);
+    else return fitOLS(params0[0], params0[1], true);
+}

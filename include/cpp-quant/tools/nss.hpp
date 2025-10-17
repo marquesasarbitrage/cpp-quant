@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include "cpp-math/regression.hpp"
+#include "cpp-math/curveinterpolation.hpp"
 #include "cpp-math/optim.hpp"
 #include "cpp-math/loss.hpp"
 
@@ -92,20 +93,26 @@ class Svensson final: public NelsonSiegelFamily
 class NelsonSiegelCalibration
 {
     public:
-        NelsonSiegelCalibration(const std::map<double, double>& data, bool isSpotRate, bool useSvensson);
+        NelsonSiegelCalibration(const std::map<double, double>& data, bool isSpotRate);
         ~NelsonSiegelCalibration() = default;
 
-        EstimatorLoss getLoss(double tau1, double tau2) const;
-        std::shared_ptr<NelsonSiegelFamily> getOLS(double tau1, double tau2) const; 
-        NelderMead getNelderMeadObject() const; 
-    
+        
+        std::shared_ptr<NelsonSiegelFamily> fitOLS(double tau1, double tau2, bool useSvensson) const; 
+        std::shared_ptr<NelsonSiegelFamily> fitNelsonSiegel() const; 
+        std::shared_ptr<NelsonSiegelFamily> fitSvensson() const; 
+        void setGridSize(double value); 
+
     private: 
         std::map<double, double> data_;
         bool isSpotRate_;
-        bool useSvensson_;
-        double getTargetFunction(std::vector<double> params) const;
+        double gridSize_;
+
+        EstimatorLoss getLoss(double tau1, double tau2, bool useSvensson) const;
+        double getNelsonSiegelIniatialTau() const;
+        std::vector<double>  getSvenssonIniatialTau() const;
 
 };
+
 
 
 

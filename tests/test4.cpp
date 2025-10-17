@@ -61,12 +61,14 @@ void writeNelsonSiegelResult(const std::shared_ptr<NelsonSiegelFamily>& ns, std:
     }
 
     // Write column headers
-    file << "timeToMaturity,observedSpotRate,nssSpotRate,nssForwardRate,nssDerivativeForwardRate, \n";
+    file << "timeToMaturity,observedSpotRate,observedDerivativeSpotRate,nssSpotRate,nssForwardRate,nssDerivativeForwardRate, \n";
 
     std::map<double, double> data = getYearFractionMappedData();
 
+    CubicSpline linearInterp = CubicSpline(data);
+
     for (const auto& d:data){
-        file << d.first << "," << d.second << "," << ns->getRate(d.first) << "," << ns->getInstantaneousForwardRate(d.first) << "," << ns->getDerivativeInstantaneousForwardRate(d.first) << "," <<"\n";
+        file << d.first << "," << d.second << "," << linearInterp.evaluateSecondDerivative(d.first) << "," << ns->getRate(d.first) << "," << ns->getInstantaneousForwardRate(d.first) << "," << ns->getDerivativeInstantaneousForwardRate(d.first) << "," <<"\n";
     }
 
     file.close();
@@ -74,35 +76,15 @@ void writeNelsonSiegelResult(const std::shared_ptr<NelsonSiegelFamily>& ns, std:
 
 }
 
-void testOLS()
+void testFit1()
 {
-    NelsonSiegelCalibration nsCalib(getYearFractionMappedData(), true, false);
-    NelsonSiegelCalibration svenssonCalib(getYearFractionMappedData(), true, true);
-
-    double tau1 = 2.0; 
-    double tau2 = 10.0;
-
-    writeNelsonSiegelResult(nsCalib.getOLS(tau1,tau2), "nelsonSiegelCurveOLS"); 
-    writeNelsonSiegelResult(svenssonCalib.getOLS(tau1,tau2), "svenssonCurveOLS"); 
-
+    NelsonSiegelCalibration nsCalib(getYearFractionMappedData(), true);
+    writeNelsonSiegelResult(nsCalib.fitNelsonSiegel(), "nelsonSiegelTest"); 
+    writeNelsonSiegelResult(nsCalib.fitSvensson(), "svenssonTest"); 
 }
-
-void testNelderMead()
-{
-    NelsonSiegelCalibration nsCalib(getYearFractionMappedData(), true, false);
-    NelsonSiegelCalibration svenssonCalib(getYearFractionMappedData(), true, true);
-
-    //std::vector<double> nsParams = nsCalib.getNelderMeadObject().getResult();
-    std::vector<double> svenssonParams = svenssonCalib.getNelderMeadObject().getResult();
-
-    //writeNelsonSiegelResult(nsCalib.getOLS(nsParams[0],10.0), "nelsonSiegelCurveNM"); 
-    writeNelsonSiegelResult(svenssonCalib.getOLS(svenssonParams[0],svenssonParams[1]), "svenssonCurveNM"); 
-}
-
 
 int main()
 {
-    testOLS();
-    testNelderMead();
+    testFit1();
     return 0;
 }
