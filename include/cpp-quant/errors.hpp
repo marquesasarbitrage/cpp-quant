@@ -19,11 +19,22 @@ namespace QuantErrorRegistry
     class NegativeYearFractionError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
     class NegativeForwardYearFractionError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
 
-    namespace TermStructure 
+    namespace Valuation 
     {
-        namespace DiscountCurve 
+        namespace MarketData
         {
-            class MismatchTenorBumpSizeError final:public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+            class EmptyOvernightAverageRateError final:public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+
+            namespace TermStructure 
+            {
+                namespace DiscountCurve 
+                {
+                    class MismatchTenorBumpSizeError final:public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+                }
+            }
+
         }
     }
+
+    
 }

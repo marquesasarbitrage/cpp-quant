@@ -177,8 +177,8 @@ std::shared_ptr<NelsonSiegelFamily>  NelsonSiegelCalibration::fitSvensson() cons
     
     std::function<double(std::vector<double>)> targetFunction = [*this](std::vector<double> params)
     { 
-        std::cout << "Tau1: " <<params[0] << std::endl;
-        std::cout << "Tau2: " <<params[1] << std::endl;
+        //std::cout << "Tau1: " <<params[0] << std::endl;
+        //std::cout << "Tau2: " <<params[1] << std::endl;
         if (params[0]==0.0 or params[1]==0.0) return 1e10;
         EstimatorLoss loss = getLoss(params[0], params[1], true);
         return loss.getMSE();

@@ -13,3 +13,7 @@ target_link_libraries(quant-test3 PUBLIC cpp-quant)
 # Discount curve tests
 add_executable(quant-test4 ${CMAKE_CURRENT_SOURCE_DIR}/tests/test4/test4.cpp)
 target_link_libraries(quant-test4 PUBLIC cpp-quant)
+
+# Compound rate tests
+add_executable(quant-test5 ${CMAKE_CURRENT_SOURCE_DIR}/tests/test5.cpp)
+target_link_libraries(quant-test5 PUBLIC cpp-quant)
