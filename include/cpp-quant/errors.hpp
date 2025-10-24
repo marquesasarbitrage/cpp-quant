@@ -36,5 +36,16 @@ namespace QuantErrorRegistry
         }
     }
 
+    namespace Instruments
+    {
+        class NegativeBidAskSpreadError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+
+        class SettledInstrumentError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+
+        class IncorrectModelError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+
+        
+    }
+
     
 }

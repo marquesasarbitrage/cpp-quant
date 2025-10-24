@@ -177,6 +177,70 @@ void DiscountCurve::classSetter(const std::map<DateTime, double>& data, const Sc
     classSetter(output,interpolationMethod,dataType);
 }
 
+double DiscountCurve::getYearFraction(const Tenor& tenor, const Scheduler& scheduler) const
+{
+    return scheduler.getYearFraction(getReferenceTime(), scheduler.getForwardDateTime(getReferenceTime(),tenor));
+}
+double DiscountCurve::getYearFraction(const DateTime& referenceTime, const Scheduler& scheduler) const
+{
+    return scheduler.getYearFraction(getReferenceTime(), referenceTime);
+}
+
+double DiscountCurve::getInstantaneousForwardRate(const Tenor& tenor, const Scheduler& scheduler) const 
+{
+    return getInstantaneousForwardRate(getYearFraction(tenor,scheduler));
+}
+
+double DiscountCurve::getDerivativeInstantaneousForwardRate(const Tenor& tenor, const Scheduler& scheduler) const
+{
+    return getDerivativeInstantaneousForwardRate(getYearFraction(tenor,scheduler));
+}
+
+double DiscountCurve::getForwardValue(const Tenor& startTenor, const Tenor& endTenor, const Scheduler& scheduler) const
+{
+    return getForwardValue(getYearFraction(startTenor,scheduler), getYearFraction(endTenor,scheduler));
+}
+
+double DiscountCurve::getSimpleRate(const Tenor& tenor, const Scheduler& scheduler) const
+{
+    return getSimpleRate(getYearFraction(tenor,scheduler));
+}
+
+double DiscountCurve::getContinuousRate(const Tenor& tenor, const Scheduler& scheduler) const
+{
+    return getContinuousRate(getYearFraction(tenor,scheduler));
+}
+
+double DiscountCurve::getSimpleForwardRate(const Tenor& startTenor, const Tenor& endTenor, const Scheduler& scheduler) const
+{
+    return getSimpleForwardRate(getYearFraction(startTenor,scheduler), getYearFraction(endTenor,scheduler));
+}
+
+double DiscountCurve::getContinuousForwardRate(const Tenor& startTenor, const Tenor& endTenor, const Scheduler& scheduler) const
+{
+    return getContinuousForwardRate(getYearFraction(startTenor,scheduler), getYearFraction(endTenor,scheduler));
+}
+
+double DiscountCurve::getInstantaneousForwardRate(const DateTime& referenceTime, const Scheduler& scheduler) const{ return getInstantaneousForwardRate(getYearFraction(referenceTime,scheduler));}
+
+double DiscountCurve::getDerivativeInstantaneousForwardRate(const DateTime& referenceTime, const Scheduler& scheduler) const  const{ return getDerivativeInstantaneousForwardRate(getYearFraction(referenceTime,scheduler));}
+
+double DiscountCurve::getForwardValue(const DateTime& startTime, const DateTime& endTime, const Scheduler& scheduler) const
+{
+    return getContinuousForwardRate(getYearFraction(startTime,scheduler), getYearFraction(endTime,scheduler));
+}
+
+double DiscountCurve::getSimpleRate(const DateTime& referenceTime, const Scheduler& scheduler) const const{ return getSimpleRate(getYearFraction(referenceTime,scheduler));}
+double DiscountCurve::getContinuousRate(const DateTime& referenceTime, const Scheduler& scheduler) const const{ return getContinuousRate(getYearFraction(referenceTime,scheduler));}
+double DiscountCurve::getSimpleForwardRate(const DateTime& startTime, const DateTime& endTime, const Scheduler& scheduler) const
+{
+    return getSimpleForwardRate(getYearFraction(startTime,scheduler), getYearFraction(endTime,scheduler));
+}
+
+double DiscountCurve::getContinuousForwardRate(const DateTime& startTime, const DateTime& endTime, const Scheduler& scheduler) const
+{
+    return getContinuousForwardRate(getYearFraction(startTime,scheduler), getYearFraction(endTime,scheduler));
+}
 
 
 

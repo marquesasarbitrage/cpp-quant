@@ -30,4 +30,9 @@ namespace QuantErrorRegistry
         }
     }
 
+    namespace Instruments
+    {
+        std::string NegativeBidAskSpreadError::getErrorMessage() const {return "The bid-ask spread cannot be negative.";}
+    }
+
 }

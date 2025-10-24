@@ -2,6 +2,7 @@
 #include <iostream>
 #include "../../../../include/cpp-quant/errors.hpp"
 #include "../../../../include/cpp-quant/tools/scheduler.hpp"
+#include "../../../../include/cpp-quant/valuation/marketdata/termstructure/discountcurve.hpp"
 
 class ValuationModel
 {
@@ -16,3 +17,16 @@ class ValuationModel
         
 };
 
+class RiskFreeRateValuationModel : public ValuationModel 
+{
+    public: 
+        RiskFreeRateValuationModel(const DiscountCurve& discountCurve, const AverageOvernightRate& averageOvernightRate); 
+        virtual ~RiskFreeRateValuationModel() = default; 
+
+        DiscountCurve getDiscountCurve() const; 
+        AverageOvernightRate getAverageOvernightRate() const;
+    
+    private: 
+        const DiscountCurve discountCurve_;
+        const AverageOvernightRate averageOvernightRate_;
+};
