@@ -9,7 +9,7 @@ class Curve:
     
     def loadData(self) -> dict[str, List[float]]:
         timeToMat, contRate, simpleRate, forwRate, derivForwRate = [], [], [], [], []
-        with open('build/output-test4/'+self.name+'.csv', newline="") as csvfile:
+        with open('build/output-discountcurve-test/'+self.name+'.csv', newline="") as csvfile:
             reader = csv.DictReader(csvfile)  # Reads by column names
             for row in reader:
                 timeToMat.append(float(row['timeToMaturity']))
@@ -34,7 +34,7 @@ class Curve:
         plt.xlabel('Time to maturity')
         plt.ylabel('Yield')
         plt.legend()
-        if save: plt.savefig('build/output-test4/'+self.name+'.png')
+        if save: plt.savefig('build/output-discountcurve-test/'+self.name+'.png')
         plt.show()
 
     def plotComparaisonCurve(self, otherCurve: 'Curve', toCompare:str = 'simpleRate', save: bool = True) -> None:
@@ -44,7 +44,7 @@ class Curve:
         plt.xlabel('Time to maturity')
         plt.ylabel('Yield')
         plt.legend()
-        if save: plt.savefig('build/output-test4/'+self.name+'-'+otherCurve.name+'-'+ toCompare +'.png')
+        if save: plt.savefig('build/output-discountcurve-test/'+self.name+'-'+otherCurve.name+'-'+ toCompare +'.png')
         plt.show() 
 
     def plotFit(self, otherCurve: 'Curve', save: bool = True) -> None:
@@ -56,9 +56,8 @@ class Curve:
         plt.xlabel('Time to maturity')
         plt.ylabel('Yield')
         plt.legend()
-        if save: plt.savefig('build/output-test4/'+self.name+'-'+otherCurve.name+'-Fit.png')
+        if save: plt.savefig('build/output-discountcurve-test/'+self.name+'-'+otherCurve.name+'-Fit.png')
         plt.show() 
-
 
 curve1 = Curve('Canada::24092025::CubicSpline')
 curve3 = Curve('Canada::24092025::Svensson')

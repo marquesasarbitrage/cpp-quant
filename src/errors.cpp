@@ -33,6 +33,9 @@ namespace QuantErrorRegistry
     namespace Instruments
     {
         std::string NegativeBidAskSpreadError::getErrorMessage() const {return "The bid-ask spread cannot be negative.";}
+        std::string SettledInstrumentError::getErrorMessage() const {return "The instrument is settled at the reference time of the model.";}
+        std::string IncorrectModelError::getErrorMessage() const {return "The model used is unknown for the valuation of the instrument.";}
+        std::string NegativeNotionalError::getErrorMessage() const {return "The notional of an instrument cannot be negative.";}
     }
 
 }

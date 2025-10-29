@@ -7,7 +7,7 @@
 #include <map>
 #include <iomanip> 
 #include <filesystem>
-#include "../../include/cpp-quant/tools/nss.hpp"
+#include "../../../include/cpp-quant/tools/nss.hpp"
 
 // Zero yields data of Bank of Canada as of September 24th, 2025 (https://www.bankofcanada.ca/rates/interest-rates/bond-yield-curves/)
 std::map<double, double> getCanadianZeroYieldData()

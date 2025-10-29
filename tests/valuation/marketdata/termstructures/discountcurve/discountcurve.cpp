@@ -5,7 +5,7 @@
 #include <set>
 #include <iomanip> 
 #include <filesystem>
-#include "../../include/cpp-quant/valuation/marketdata/termstructure/discountcurve.hpp"
+#include "../../../../include/cpp-quant/valuation/marketdata/termstructures/discountcurve.hpp"
 
 // Zero yields data of Bank of Canada as of September 24th, 2025 (https://www.bankofcanada.ca/rates/interest-rates/bond-yield-curves/)
 namespace CanadianZeroYieldData
@@ -58,12 +58,12 @@ namespace CanadianZeroYieldData
     {
         std::map<double, double> rawData = getData();
         std::map<Tenor, double> data; 
-        Scheduler scheduler = Scheduler();
+        Scheduler scheduler = Scheduler(DayCountConvention::ACTUAL_360);
         double m = 0, t; 
         for (const auto& y: rawData)
         {
             m+=3;
-            t = scheduler.getYearFraction(REFERENCE_DATE,scheduler.getForwardDateTime(REFERENCE_DATE,Tenor(m,TenorType::MONTHS)));
+            t = scheduler.getYearFraction(REFERENCE_DATE,Tenor(m,TenorType::MONTHS));
             data[Tenor(m,TenorType::MONTHS)] = y.second;
         }
         return data;
@@ -74,11 +74,11 @@ namespace CanadianZeroYieldData
         std::map<double, double> rawData = getData();
         std::map<DateTime, double> data; 
         DateTime dt = REFERENCE_DATE;
-        Scheduler scheduler = Scheduler();
+        Scheduler scheduler = Scheduler(DayCountConvention::ACTUAL_360);
         double t;
         for (const auto& y: rawData)
         {
-            dt = scheduler.getForwardDateTime(dt,Tenor(3,TenorType::MONTHS));
+            dt = Tenor(3,TenorType::MONTHS).getForwardDate(dt);
             t = scheduler.getYearFraction(REFERENCE_DATE,dt);
             data[dt] = y.second;
         }
@@ -121,8 +121,8 @@ namespace USTreasuryParYieldData
 void writeDiscountCurve(const DiscountCurve& dc, std::string fileName) {
 
     // Open file for writing
-    std::filesystem::create_directory("output-test4");
-    std::ofstream file("output-test4/" + fileName +".csv");
+    std::filesystem::create_directory("output-discountcurve-test");
+    std::ofstream file("output-discountcurve-test/" + fileName +".csv");
     if (!file.is_open()) {
         std::cerr << "Error: could not open file." << std::endl;
     }
@@ -179,9 +179,9 @@ void testConstructors()
     testCurveMethods(dc1, dataTest);
     DiscountCurve dc2(CanadianZeroYieldData::REFERENCE_DATE, CanadianZeroYieldData::getData(), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, CanadianZeroYieldData::interpolationVariable);
     testCurveMethods(dc2, dataTest);
-    DiscountCurve dc3(CanadianZeroYieldData::REFERENCE_DATE, CanadianZeroYieldData::getTenorMapped(), Scheduler(), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, CanadianZeroYieldData::interpolationVariable);
+    DiscountCurve dc3(CanadianZeroYieldData::REFERENCE_DATE, CanadianZeroYieldData::getTenorMapped(), Scheduler(DayCountConvention::ACTUAL_360), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, CanadianZeroYieldData::interpolationVariable);
     testCurveMethods(dc3, {{.25, 0.0242277000}});
-    DiscountCurve dc4(CanadianZeroYieldData::REFERENCE_DATE, CanadianZeroYieldData::getDatetimeMapped(), Scheduler(), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, CanadianZeroYieldData::interpolationVariable);
+    DiscountCurve dc4(CanadianZeroYieldData::REFERENCE_DATE, CanadianZeroYieldData::getDatetimeMapped(), Scheduler(DayCountConvention::ACTUAL_360), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, CanadianZeroYieldData::interpolationVariable);
     testCurveMethods(dc4, {{.25, 0.0242277000}});
 }
 
@@ -203,9 +203,9 @@ void testNelsonSiegelCurve()
     DiscountCurve canadianSvensson = canadianLinear.getSvenssonCurve();
     writeDiscountCurve(canadianSvensson, "Canada::24092025::Svensson");
 
-    DiscountCurve USTCubic(USTreasuryParYieldData::REFERENCE_DATE, USTreasuryParYieldData::getData(), Scheduler(), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, USTreasuryParYieldData::interpolationVariable);
+    DiscountCurve USTCubic(USTreasuryParYieldData::REFERENCE_DATE, USTreasuryParYieldData::getData(), Scheduler(DayCountConvention::ACTUAL_360), DiscountCurve::InterpolationMethod::CUBIC_SPLINE, USTreasuryParYieldData::interpolationVariable);
     writeDiscountCurve(USTCubic, "USTreasury::17102025::CubicSpline");
-    DiscountCurve USTLinear(USTreasuryParYieldData::REFERENCE_DATE, USTreasuryParYieldData::getData(), Scheduler(), DiscountCurve::InterpolationMethod::LINEAR, USTreasuryParYieldData::interpolationVariable);
+    DiscountCurve USTLinear(USTreasuryParYieldData::REFERENCE_DATE, USTreasuryParYieldData::getData(), Scheduler(DayCountConvention::ACTUAL_360), DiscountCurve::InterpolationMethod::LINEAR, USTreasuryParYieldData::interpolationVariable);
     writeDiscountCurve(USTLinear, "USTreasury::17102025::Linear");
     DiscountCurve USTSvensson = USTLinear.getSvenssonCurve();
     writeDiscountCurve(USTSvensson, "USTreasury::17102025::Svensson");

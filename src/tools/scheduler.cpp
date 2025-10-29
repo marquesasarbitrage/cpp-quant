@@ -1,18 +1,19 @@
 #include "../../include/cpp-quant/tools/scheduler.hpp"
 
-Tenor::Tenor(int value, const TenorType& tenor_type): value_(abs(value)), tenor_type_(tenor_type){}
+Tenor::Tenor(int value, const TenorType& tenorType): value_(abs(value)), tenorType_(tenorType){}
 
 int Tenor::getValue() const {return value_;}
-TenorType Tenor::getTenorType() const {return tenor_type_;}
+TenorType Tenor::getTenorType() const {return tenorType_;}
+
 std::string Tenor::asString() const
 {
     if (value_ == 0) return "0D";
-    else if (value_ == 1 and tenor_type_ == TenorType::DAYS) return "ON";
-    else if (value_ == 2 and tenor_type_ == TenorType::DAYS) return "SN";
-    else if (value_ == 3 and tenor_type_ == TenorType::DAYS) return "TN";
+    else if (value_ == 1 and tenorType_ == TenorType::DAYS) return "ON";
+    else if (value_ == 2 and tenorType_ == TenorType::DAYS) return "SN";
+    else if (value_ == 3 and tenorType_ == TenorType::DAYS) return "TN";
     else 
     {
-        switch (tenor_type_)
+        switch (tenorType_)
         {
             case TenorType::DAYS: return std::to_string(value_) + "D";;
             case TenorType::WEEKS: return std::to_string(value_) + "W";
@@ -22,103 +23,150 @@ std::string Tenor::asString() const
     }
 }
 
-TimeDelta Tenor::getRawTimeDelta() const
+TimeDelta Tenor::getTimeDelta() const{ DateTime now = DateTime();return getForwardDate(now) - now;}
+
+DateTime Tenor::getForwardDate(const DateTime& startDate) const
 {
-    DateTime now = DateTime();
-    std::tm t = now.getCTimeObject();
+    std::tm t = startDate.getCTimeObject();
     switch (getTenorType()){
         case TenorType::DAYS: {t.tm_mday += getValue();}; break;
         case TenorType::WEEKS: {t.tm_mday += 7*getValue();}; break;
         case TenorType::MONTHS: {t.tm_mon += getValue();}; break;
         case TenorType::YEARS: {t.tm_year += getValue();}; break;
     }
-    DateTime forwardDate = DateTime(static_cast<long long int>(mktime(&t)), EpochTimestampType::SECONDS);
-    return forwardDate - now;
-
+    DateTime newDate = DateTime(static_cast<long long int>(mktime(&t)), EpochTimestampType::SECONDS);
+    if (DateTimeTools::isEndMonth(startDate) and startDate.getCTimeObject().tm_mday == 31){
+        if (newDate.getCTimeObject().tm_mday == 1) return newDate - TimeDelta(1,0,0,0,0,0,0);
+        else return newDate;
+    } else return newDate;
 }
 
-bool Tenor::operator==(const Tenor& other) const {return (getRawTimeDelta() == other.getRawTimeDelta()) ? true : false;}
-bool Tenor::operator<(const Tenor& other) const {return (getRawTimeDelta() < other.getRawTimeDelta()) ? true : false;}
-bool Tenor::operator<=(const Tenor& other) const {return (getRawTimeDelta() <= other.getRawTimeDelta()) ? true : false;}
+bool Tenor::operator==(const Tenor& other) const {return (getTimeDelta() == other.getTimeDelta()) ? true : false;}
+bool Tenor::operator<(const Tenor& other) const {return (getTimeDelta() < other.getTimeDelta()) ? true : false;}
+bool Tenor::operator<=(const Tenor& other) const {return (getTimeDelta() <= other.getTimeDelta()) ? true : false;}
 bool Tenor::operator!=(const Tenor& other) const{return (!operator==(other));}
 bool Tenor::operator>(const Tenor& other) const {return (!operator<=(other));}
 bool Tenor::operator>=(const Tenor& other) const {return (!operator<(other));}
-Tenor Tenor::operator*(int n) const{return Tenor(value_*abs(n), tenor_type_);}
-double Tenor::operator/(const Tenor& other) const{return double(getRawTimeDelta().getTotalNanoSeconds())/double(other.getRawTimeDelta().getTotalNanoSeconds());}
+Tenor Tenor::operator*(int n) const{return Tenor(value_*abs(n), getTenorType());}
+double Tenor::operator/(const Tenor& other) const{return double(getTimeDelta().getTotalNanoSeconds())/double(other.getTimeDelta().getTotalNanoSeconds());}
 
-Scheduler::Scheduler(const bool businessDayAdjusted, const HolidayCalendar& holidayCalendar, const DayCountConvention& dayCountConvention):
-businessDayAdjusted_(businessDayAdjusted), holidayCalendar_(holidayCalendar), dayCountConvention_(dayCountConvention){};
+Scheduler::Scheduler(const DayCountConvention& dayCountConvention, const BusinessDayConvention& businessdayConvention, const HolidayCalendar& holidayCalendar):
+dayCountConvention_(dayCountConvention), businessdayConvention_(businessdayConvention), holidayCalendar_(holidayCalendar){holidayList_ = loadHolidayList(holidayCalendar);}
 
-Scheduler::Scheduler():businessDayAdjusted_(false), holidayCalendar_(HolidayCalendar::NONE), dayCountConvention_(DayCountConvention::ACTUAL_360){};
+Scheduler::Scheduler(const DayCountConvention& dayCountConvention): 
+dayCountConvention_(dayCountConvention), businessdayConvention_(BusinessDayConvention::NONE), holidayCalendar_(HolidayCalendar::NONE){}
 
-void Scheduler::setDayCountConvention(const DayCountConvention& dayCountConvention){dayCountConvention_=dayCountConvention;}
-void Scheduler::setHolidayCalendar(const HolidayCalendar& holidayCalendar){holidayCalendar_=holidayCalendar;}
-void Scheduler::setIsBusinessDayAdjusted(bool businessDayAdjusted){businessDayAdjusted_=businessDayAdjusted;}
+void Scheduler::setDayCountConvention(const DayCountConvention& dayCountConvention){dayCountConvention_ = dayCountConvention;}
+void Scheduler::setHolidayCalendar(const HolidayCalendar& holidayCalendar){holidayCalendar_ = holidayCalendar; holidayList_ = loadHolidayList(holidayCalendar);}
+void Scheduler::setBusinessDayConvention(const BusinessDayConvention& businessdayConvention){businessdayConvention_ = businessdayConvention;}
 
-DayCountConvention Scheduler::getDayCountConvention()const{return dayCountConvention_;}
-HolidayCalendar Scheduler::getHolidayCalendar()const{return holidayCalendar_;}
-bool Scheduler::getIsBusinessDayAdjusted()const{return businessDayAdjusted_;}
+DayCountConvention Scheduler::getDayCountConvention() const {return dayCountConvention_;}
+HolidayCalendar Scheduler::getHolidayCalendar() const {return holidayCalendar_;}
+BusinessDayConvention Scheduler::getBusinessDayConvention() const{return businessdayConvention_;}
 
-bool Scheduler::isWeekEnd(const DateTime& referenceDate) const
+std::set<DateTime> Scheduler::loadHolidayList(const HolidayCalendar& holidayCalendar) const 
 {
-    std::tm time_info = referenceDate.getCTimeObject();
-    if (time_info.tm_wday==0){return true;}
-    if (time_info.tm_wday==6){return true;}
-    return false;
-}
+    std::set<DateTime> holidayList = {};
+    std::set<DateTime> output = {};
+    for (const DateTime& h: holidayList) output.insert(DateTimeTools::getMidnightDateTime(h));
+    return output;
+} 
 
-DateTime Scheduler::getNextBusinessDay(const DateTime& referenceDate) const
+DateTime Scheduler::getFollowingAjustedBusinessDay(const DateTime& date) const
 {
-    switch (holidayCalendar_)
-    {
-    case HolidayCalendar::NONE: return getNextBusinessDayNone(referenceDate); 
-    default: 
-        //holidayCalendar_ = HolidayCalendar::NONE;
-        return getNextBusinessDayNone(referenceDate); 
-    }
-}
-
-DateTime Scheduler::getNextBusinessDayNone(const DateTime& referenceDate) const
-{
-    DateTime outDate = DateTime(referenceDate.getTimestamp(), referenceDate.getTimestampType());
-    if (isWeekEnd(referenceDate)){
-        int day_of_week = outDate.getCTimeObject().tm_wday;
-        if (day_of_week == 6) {outDate += TimeDelta(2,0,0,0,0,0,0);};
-        if (day_of_week == 0) {outDate += TimeDelta(1,0,0,0,0,0,0);};
+    std::tm t = date.getCTimeObject();
+    int weekDay = t.tm_wday;
+    int adjFollowing = weekDay==0 ? 1 : weekDay==6 ? 2 : 0; 
+    DateTime newDate = date + TimeDelta(adjFollowing, 0,0,0,0,0,0);
+    while (holidayList_.find(DateTimeTools::getMidnightDateTime(newDate)) != holidayList_.end() or DateTimeTools::isWeekEnd(newDate)) {
+        newDate += TimeDelta(1,0,0,0,0,0,0);
     };
-    return outDate;
+    return newDate;
+
 }
 
-double Scheduler::getYearFraction(const DateTime& start, const DateTime& end) const
+DateTime Scheduler::getPrecedingAjustedBusinessDay(const DateTime& date) const
 {
-    if (start>end) return 0.0;
-    return double((end-start).getTotalNanoSeconds())/(static_cast<double>(dayCountConvention_)*static_cast<double>(EpochTimestampType::NANOSECONDS)*24.0*60.0*60.0);
+    std::tm t = date.getCTimeObject();
+    int weekDay = t.tm_wday;
+    int adjPreceding = weekDay==0 ? -2 : weekDay==6 ? -1 : 0; 
+    DateTime newDate = date + TimeDelta(adjPreceding, 0,0,0,0,0,0);
+    while (holidayList_.find(DateTimeTools::getMidnightDateTime(newDate)) != holidayList_.end() or DateTimeTools::isWeekEnd(newDate)) {
+        newDate -= TimeDelta(1,0,0,0,0,0,0);
+    };
+    return newDate;
 }
 
-DateTime Scheduler::getForwardDateTime(const DateTime& referenceDate, const Tenor& tenor) const
+DateTime Scheduler::getBusinessAdjustedDate(const DateTime& date) const
 {
-    std::tm t = referenceDate.getCTimeObject();
-    switch (tenor.getTenorType()){
-        case TenorType::DAYS: {t.tm_mday += tenor.getValue();}; break;
-        case TenorType::WEEKS: {t.tm_mday += 7*tenor.getValue();}; break;
-        case TenorType::MONTHS: {t.tm_mon += tenor.getValue();}; break;
-        case TenorType::YEARS: {t.tm_year += tenor.getValue();}; break;
-    }
-    DateTime forwardDate = DateTime(static_cast<long long int>(mktime(&t)), EpochTimestampType::SECONDS);
-    return businessDayAdjusted_ ? getNextBusinessDay(forwardDate) : forwardDate;
-}
-
-std::vector<DateTime> Scheduler::getDateTimeSequence(const DateTime& start, const Tenor& frequence, const Tenor& maturity) const
-{
-    DateTime reference_date = businessDayAdjusted_ ? getNextBusinessDay(start): start;
-    DateTime maturity_date = getForwardDateTime(start, maturity);
-    int n = static_cast<int>(round(maturity/frequence));
-    std::vector<DateTime> dateSequence = {reference_date}; 
-    for (int i = 0; i<n-1; i++)
+    switch (businessdayConvention_)
     {
-        reference_date = getForwardDateTime(reference_date, frequence);
-        dateSequence.push_back(reference_date);
+    case BusinessDayConvention::NONE: return date;
+    case BusinessDayConvention::FOLLOWING: return getFollowingAjustedBusinessDay(date);
+    case BusinessDayConvention::PRECEDING: return getPrecedingAjustedBusinessDay(date);
+    case BusinessDayConvention::MODIFIED_FOLLOWING: {
+        DateTime modFol = getFollowingAjustedBusinessDay(date); 
+        if (modFol.getCTimeObject().tm_mon == date.getCTimeObject().tm_mon) return modFol; 
+        else return getPrecedingAjustedBusinessDay(date);
     }
-    dateSequence.push_back(maturity_date);
-    return dateSequence;
+    case BusinessDayConvention::MODIFIED_PRECEDING: {
+        DateTime modPrec = getPrecedingAjustedBusinessDay(date); 
+        if (modPrec.getCTimeObject().tm_mon == date.getCTimeObject().tm_mon) return modPrec; 
+        else return getFollowingAjustedBusinessDay(date);
+    }
+    default: return date;
+    }
 }
+
+double Scheduler::getYearFraction(const DateTime& startDate, const DateTime& endDate) const
+{
+    DateTime d0 = getBusinessAdjustedDate(startDate); 
+    DateTime d1 = getBusinessAdjustedDate(endDate); 
+    switch (dayCountConvention_)
+    {
+    case DayCountConvention::ACTUAL_360: return double((d1-d0).getTotalNanoSeconds())/Scheduler::FACTOR360;
+    case DayCountConvention::ACTUAL_365: return double((d1-d0).getTotalNanoSeconds())/Scheduler::FACTOR365;
+    case DayCountConvention::ACTUAL_364: return double((d1-d0).getTotalNanoSeconds())/Scheduler::FACTOR364;
+    case DayCountConvention::ACTUAL_ACTUAL: {
+        long long leap = double(DateTimeTools::getTimeInLeapYear(startDate, endDate).getTotalNanoSeconds());
+        long long total = double((endDate-startDate).getTotalNanoSeconds()); 
+        return double(leap)/Scheduler::FACTOR366 + double(total-leap)/Scheduler::FACTOR365;
+    }
+    case DayCountConvention::BOND_BASIS30_360: {
+        int d2 = endDate.getCTimeObject().tm_mday, d1 = startDate.getCTimeObject().tm_mday; 
+        d1 = std::min(30,d1);
+        d2 = (d1==30) ? std::min(30,d2) : d2;
+        return (get30360BaseCount(startDate,endDate) + (d2-d1))/360.0;
+    }
+    case DayCountConvention::E30_360: {
+        int d2 = endDate.getCTimeObject().tm_mday, d1 = startDate.getCTimeObject().tm_mday; 
+        return (get30360BaseCount(startDate,endDate) + (std::min(30,d2)-std::min(30,d1)))/360.0;
+    }
+    }
+
+}
+
+double Scheduler::get30360BaseCount(const DateTime& startDate, const DateTime& endDate) const
+{
+    int y2 = endDate.getCTimeObject().tm_year, y1 = startDate.getCTimeObject().tm_year; 
+    int m2 = endDate.getCTimeObject().tm_mon, m1 = startDate.getCTimeObject().tm_mon; 
+    return 360.0*(y2-y1) + 30.0*(m2-m1);
+}
+
+double Scheduler::getYearFraction(const DateTime& startDate, const Tenor& tenor) const
+{
+    return getYearFraction(startDate,tenor.getForwardDate(startDate));
+}
+
+std::set<DateTime> Scheduler::getSchedule(const DateTime& referenceDate, const Tenor& frequence, int sequenceLength) const
+{
+    std::set<DateTime> output = {getBusinessAdjustedDate(referenceDate)}; 
+    DateTime d0 = referenceDate;
+    
+    for (int i = 0; i<sequenceLength; i++)
+    {
+        d0 = frequence.getForwardDate(d0);
+        output.insert(getBusinessAdjustedDate(d0));
+    }
+    return output;
+};

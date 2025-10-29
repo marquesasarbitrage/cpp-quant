@@ -2,7 +2,7 @@
 #include <iostream>
 #include "../../../../include/cpp-quant/errors.hpp"
 #include "../../../../include/cpp-quant/tools/scheduler.hpp"
-#include "../../../../include/cpp-quant/valuation/marketdata/termstructure/discountcurve.hpp"
+#include "../../../../include/cpp-quant/valuation/marketdata/termstructures/discountcurve.hpp"
 
 class ValuationModel
 {

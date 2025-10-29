@@ -53,7 +53,6 @@ class Bond : public Instrument
 {
     public:
         Bond(double notional, const DateTime& maturityDate, const DayCountConvention& dayCountConvention); 
-        Bond(double notional, const DateTime& startDate, const Tenor& tenor, const DayCountConvention& dayCountConvention); 
         virtual ~Bond() = default; 
     
         Scheduler getScheduler() const; 
@@ -62,8 +61,9 @@ class Bond : public Instrument
         bool isSettled(const DateTime& referenceTime) const override;
     
     protected: 
-        Quote _getValuation(const std::shared_ptr<ValuationModel>& valuationModel) const override = 0;
-    
+        Quote _getValuation(const std::shared_ptr<ValuationModel>& valuationModel) const override;
+        virtual Quote getRiskFreeValuation(const std::shared_ptr<RiskFreeRateValuationModel>& valuationModel) const = 0;
+
     private: 
         const double notional_;
         const Scheduler scheduler_;

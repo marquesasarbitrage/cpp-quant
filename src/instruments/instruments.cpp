@@ -53,10 +53,10 @@ double Quote::getBidMidSpread() const {return getMid()-bid_;}
 double Quote::getBidMidSpreadPercentage() const {try{return getBidMidSpread()/bid_;} catch (const std::exception& e){return NAN;}}
 
 Bond::Bond(double notional, const DateTime& maturityDate, const DayCountConvention& dayCountConvention):
-notional_(notional), scheduler_(Scheduler(true,HolidayCalendar::NONE,dayCountConvention)), maturityDate_(maturityDate){};
-
-Bond::Bond(double notional, const DateTime& startDate, const Tenor& tenor, const DayCountConvention& dayCountConvention):
-notional_(notional), scheduler_(Scheduler(true,HolidayCalendar::NONE,dayCountConvention)), maturityDate_(scheduler_.getForwardDateTime(startDate,tenor)){};
+notional_(notional), scheduler_(Scheduler(true,HolidayCalendar::NONE,dayCountConvention)), maturityDate_(maturityDate)
+{
+    if (notional_<0) throw QuantErrorRegistry::Instruments::NegativeNotionalError();
+};
 
 bool Bond::isSettled(const DateTime& referenceTime) const
 {
@@ -67,3 +67,9 @@ bool Bond::isSettled(const DateTime& referenceTime) const
 Scheduler Bond::getScheduler() const {return scheduler_;}
 DateTime Bond::getMaturityDate() const {return maturityDate_;}
 double Bond::getNotional() const {return notional_;}
+
+Quote Bond::_getValuation(const std::shared_ptr<ValuationModel>& valuationModel) const
+{
+    if (auto d = std::dynamic_pointer_cast<RiskFreeRateValuationModel>(valuationModel)) return getRiskFreeValuation(d);
+    else throw QuantErrorRegistry::Instruments::IncorrectModelError();
+}

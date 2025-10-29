@@ -65,9 +65,5 @@ double TermStructure::getValue(double t) const {MarketData::checkYearFraction(t)
 
 double TermStructure::getValue(const DateTime& datetime, const Scheduler& scheduler) const{return getValue(scheduler.getYearFraction(getReferenceTime(), datetime));}
 
-double TermStructure::getValue(const Tenor& tenor, const Scheduler& scheduler) const
-{
-    double t = scheduler.getYearFraction(getReferenceTime(), scheduler.getForwardDateTime(getReferenceTime(),tenor));
-    return getValue(t);
-}
+double TermStructure::getValue(const Tenor& tenor, const Scheduler& scheduler) const{return getValue(scheduler.getYearFraction(getReferenceTime(),tenor));}
 

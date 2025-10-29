@@ -44,6 +44,15 @@ namespace QuantErrorRegistry
 
         class IncorrectModelError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
 
+        class NegativeNotionalError final : public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+
+        namespace Bond
+        {
+            class InvalidRedemptionMapError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+
+            class InvalidCouponDateError final: public QuantLibraryError {protected: std::string getErrorMessage() const override; };
+        }
+
         
     }
 

@@ -44,22 +44,6 @@ class DiscountCurve final: public TermStructure
         double getSimpleForwardRate(double t1, double t2) const;
         double getContinuousForwardRate(double t1, double t2) const;
 
-        double getInstantaneousForwardRate(const Tenor& tenor, const Scheduler& scheduler) const;
-        double getDerivativeInstantaneousForwardRate(const Tenor& tenor, const Scheduler& scheduler) const;
-        double getForwardValue(const Tenor& startTenor, const Tenor& endTenor, const Scheduler& scheduler) const; 
-        double getSimpleRate(const Tenor& tenor, const Scheduler& scheduler) const;
-        double getContinuousRate(const Tenor& tenor, const Scheduler& scheduler) const;
-        double getSimpleForwardRate(const Tenor& startTenor, const Tenor& endTenor, const Scheduler& scheduler) const;
-        double getContinuousForwardRate(const Tenor& startTenor, const Tenor& endTenor, const Scheduler& scheduler) const;
-
-        double getInstantaneousForwardRate(const DateTime& referenceTime, const Scheduler& scheduler) const;
-        double getDerivativeInstantaneousForwardRate(const DateTime& referenceTime, const Scheduler& scheduler) const;
-        double getForwardValue(const DateTime& startTime, const DateTime& endTime, const Scheduler& scheduler) const; 
-        double getSimpleRate(const DateTime& referenceTime, const Scheduler& scheduler) const;
-        double getContinuousRate(const DateTime& referenceTime, const Scheduler& scheduler) const;
-        double getSimpleForwardRate(const DateTime& startTime, const DateTime& endTime, const Scheduler& scheduler) const;
-        double getContinuousForwardRate(const DateTime& startTime, const DateTime& endTime, const Scheduler& scheduler) const;
-
         DiscountCurve getInterpolatedCurve(const CurveParameters& curveParameters) const;
         DiscountCurve getSvenssonCurve(const CurveParameters& curveParameters) const;
         DiscountCurve getSvenssonCurve() const;
@@ -77,8 +61,6 @@ class DiscountCurve final: public TermStructure
         void classSetter(const std::map<double, double>& data, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
         void classSetter(const std::map<Tenor, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
         void classSetter(const std::map<DateTime, double>& data, const Scheduler& scheduler, const InterpolationMethod& interpolationMethod, const InterpolationVariable& dataType);
-        double getYearFraction(const Tenor& tenor, const Scheduler& scheduler) const;
-        double getYearFraction(const DateTime& referenceTime, const Scheduler& scheduler) const;
 };
 
 
